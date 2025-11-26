@@ -1,0 +1,9 @@
+[package]
+name = "material_list"
+version = "0.1.0"
+authors = ["Justin Hu <justin.hu@alumni.ubc.ca>"]
+edition = "2021"
+description = "A tool to sum up crafting material lists"
+
+[dependencies]
+regex = "1.11.1"
