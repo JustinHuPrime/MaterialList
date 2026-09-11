@@ -1,4 +1,4 @@
-// Copyright 2025 Justin Hu
+// Copyright 2026 Justin Hu
 //
 // This file is part of the Material Lister.
 //
@@ -23,71 +23,4 @@ use regex::Regex;
 
 fn main() {
     println!("Material Lister version {}", env!("CARGO_PKG_VERSION"));
-
-    let mut total = HashMap::<char, u64>::new();
-    let mut names = HashMap::<char, String>::new();
-
-    let name_matcher = Regex::new(r"^(\D)=(.*)$").expect("static regex");
-    let validator = Regex::new(r"^(?:\d*\D)+$").expect("static regex");
-    let component_matcher = Regex::new(r"(\d*)(\D)").expect("static regex");
-    while let Ok(line) = {
-        let mut line = String::new();
-        stdin().read_line(&mut line).map(|_| line)
-    } {
-        let line = line.trim();
-        if line.is_empty() {
-            break;
-        }
-
-        if let Some(caps) = name_matcher.captures(line) {
-            let abbrev = caps
-                .get(1)
-                .expect("mandatory capture group")
-                .as_str()
-                .chars()
-                .next()
-                .expect("validated by regex");
-            let full_name = caps
-                .get(2)
-                .expect("mandatory capture group")
-                .as_str()
-                .to_string();
-            names.insert(abbrev, full_name);
-            continue;
-        }
-
-        if !validator.is_match(line) {
-            println!("Could not parse {line}; ignoring");
-            continue;
-        }
-
-        let parsed = component_matcher.captures_iter(line);
-        for component in parsed {
-            let count = component.get(1).expect("mandatory capture group").as_str();
-            let count = if count.is_empty() {
-                1
-            } else {
-                count.parse::<u64>().expect("validated by regex")
-            };
-            let material = component
-                .get(2)
-                .expect("mandatory capture group")
-                .as_str()
-                .chars()
-                .next()
-                .expect("validated by regex");
-            *total.entry(material).or_default() += count;
-        }
-    }
-
-    let mut total = total.into_iter().collect::<Vec<_>>();
-    total.sort_by_key(|(material, _)| *material);
-    println!("Totals:");
-    for (material, count) in total {
-        let label = names
-            .get(&material)
-            .cloned()
-            .unwrap_or_else(|| material.to_string());
-        println!("{count}x {label}");
-    }
 }
