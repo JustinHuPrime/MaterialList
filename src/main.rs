@@ -52,18 +52,38 @@ fn traverse_recipe_tree(
     }
 }
 
+fn cascade_traverse_recipe_tree(
+    recipes: &HashMap<char, HashMap<char, usize>>,
+    ingredient: char,
+) -> BTreeMap<char, usize> {
+    match recipes.get(&ingredient) {
+        None => BTreeMap::from([(ingredient, 1)]),
+        Some(recipe) => {
+            let mut output = BTreeMap::from([(ingredient, 1)]);
+            for (&ingredient, &count) in recipe {
+                for (cascade_ingredient, cascade_count) in
+                    cascade_traverse_recipe_tree(recipes, ingredient)
+                {
+                    *output.entry(cascade_ingredient).or_default() += cascade_count * count;
+                }
+            }
+            output
+        }
+    }
+}
+
 fn main() {
     #[derive(Clone, Copy, ValueEnum)]
     #[value(rename_all = "kebab-case")]
     enum DisplayMode {
-        Both,
         Direct,
         Base,
+        Cascade,
     }
 
     #[derive(Parser)]
     struct Args {
-        #[arg(long, value_enum, default_value_t = DisplayMode::Both)]
+        #[arg(long, value_enum, default_value_t = DisplayMode::Cascade)]
         display: DisplayMode,
     }
 
@@ -175,27 +195,27 @@ fn main() {
     }
 
     // calculate materials
-    if matches!(args.display, DisplayMode::Base) {
-        print_list(&names, &materials);
-    } else {
-        let mut base = BTreeMap::<char, usize>::new();
-        for (&material, &count) in materials.iter() {
-            for (base_material, base_count) in traverse_recipe_tree(&recipes, material) {
-                *base.entry(base_material).or_default() += base_count * count;
+    match args.display {
+        DisplayMode::Direct => print_list(&names, &materials),
+        DisplayMode::Base => {
+            let mut base = BTreeMap::<char, usize>::new();
+            for (&material, &count) in materials.iter() {
+                for (base_material, base_count) in traverse_recipe_tree(&recipes, material) {
+                    *base.entry(base_material).or_default() += base_count * count;
+                }
             }
+            print_list(&names, &base);
         }
-
-        match args.display {
-            DisplayMode::Both => {
-                println!("Direct:");
-                print_list(&names, &materials);
-                println!("Base:");
-                print_list(&names, &base);
+        DisplayMode::Cascade => {
+            let mut cascade = BTreeMap::<char, usize>::new();
+            for (&material, &count) in materials.iter() {
+                for (cascade_material, cascade_count) in
+                    cascade_traverse_recipe_tree(&recipes, material)
+                {
+                    *cascade.entry(cascade_material).or_default() += cascade_count * count;
+                }
             }
-            DisplayMode::Direct => {
-                print_list(&names, &base);
-            }
-            DisplayMode::Base => unreachable!(),
+            print_list(&names, &cascade);
         }
     }
 }
