@@ -149,6 +149,8 @@ fn main() {
                 };
                 *materials.entry(material).or_default() += count;
             }
+        } else if line.trim().is_empty() || line.trim().starts_with("#") {
+            continue;
         } else {
             eprintln!("Invalid input: {line}");
             return;
