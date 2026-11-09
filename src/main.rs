@@ -158,7 +158,7 @@ fn main() {
     }
 
     // check components for cycles
-    for (&output, _) in recipes.iter() {
+    for &output in recipes.keys() {
         let mut todo = vec![(output, HashSet::<char>::new())];
         while let Some((current, mut path)) = todo.pop() {
             if !path.insert(current) {
